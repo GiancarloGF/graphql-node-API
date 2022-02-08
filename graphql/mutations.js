@@ -1,5 +1,6 @@
 const { GraphQLString } = require('graphql');
 const { User } = require('../models');
+const {createJWT}=require('../util/auth');
 
 const register = {
 	type: GraphQLString,
@@ -12,7 +13,7 @@ const register = {
 	},
 	resolve: async (_, args) => {
 		const { username, password, email, displayname } = args;
-		const newUser = await User.create({
+		const user = await User.create({
 			username,
 			password,
 			email,
@@ -20,17 +21,17 @@ const register = {
 		});
 
 		/* another way to create a new user in mongodb with mongoose:
-        const newUser = new User({
+        const user = new User({
             username,
             password,
             email,
             displayname,
         })
-        const user = await newUser.save();
+        const user = await user.save();
         console.log(user) 
         */
-
-		console.log(newUser);
+		const token = createJWT({id: user._id, username: user.username, email: user.email});
+		console.log(user, token);
 		return 'New user created';
 	},
 };
