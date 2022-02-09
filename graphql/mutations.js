@@ -1,6 +1,7 @@
 const { GraphQLString, GraphQLID, GraphQLNonNull } = require('graphql');
 const { User, Post } = require('../models');
 const { auth, bcrypt } = require('../util');
+const { PostType, CommentType } = require("./dataTypes");
 
 const register = {
 	type: GraphQLString,

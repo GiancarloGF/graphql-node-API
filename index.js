@@ -1,23 +1,7 @@
-const express = require('express');
-const { graphqlHTTP } = require('express-graphql');
-const schema = require('./graphql/schema');
-const { connectDB } = require('./db');
+const app = require("./app");
+const { connectDB } = require("./db");
+const { PORT } = require("./config");
 
 connectDB();
-const app = express();
-
-app.get('/', (req, res) => {
-	res.send('Hello World!');
-});
-
-app.use(
-	'/graphql',
-	graphqlHTTP({
-		schema,
-		graphiql: true,
-	})
-);
-
-app.listen(3000, () => {
-	console.log('Servidor corriendo en el puerto 3000...');
-});
+app.listen(PORT);
+console.log("Server on port", PORT);

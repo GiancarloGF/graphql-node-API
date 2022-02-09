@@ -19,6 +19,7 @@ const user= {
 	resolve: async (_, args) => {
 		const user = await User.findById(args.id);
 		if(!user) throw new Error('Usuario no encontrado');
+		console.log(user);
 		return user;
 	}
 }
