@@ -1,38 +1,24 @@
-const { GraphQLString } = require('graphql');
-const { User } = require('../models');
-const { createJWT } = require('../util/auth');
+const { GraphQLString, GraphQLID, GraphQLNonNull } = require('graphql');
+const { User, Post } = require('../models');
+const { auth, bcrypt } = require('../util');
 
 const register = {
 	type: GraphQLString,
 	description: 'Returns a string',
 	args: {
-		username: { type: GraphQLString },
-		password: { type: GraphQLString },
-		email: { type: GraphQLString },
-		displayname: { type: GraphQLString },
+		username: { type: new GraphQLNonNull(GraphQLString) },
+		password: { type: new GraphQLNonNull(GraphQLString) },
+		email: { type: new GraphQLNonNull(GraphQLString) },
+		displayName: { type: new GraphQLNonNull(GraphQLString) },
 	},
 	resolve: async (_, args) => {
-		const { username, password, email, displayname } = args;
-		const user = await User.create({
-			username,
-			password,
-			email,
-			displayname,
-		});
+		const { username, password, email, displayName } = args;
+		const user = new User({ username, email, password, displayName });
+		user.password = await bcrypt.encryptPassword(user.password);
+		await user.save();
 
-		/* another way to create a new user in mongodb with mongoose:
-        const user = new User({
-            username,
-            password,
-            email,
-            displayname,
-        })
-        const user = await user.save();
-        console.log(user) 
-        */
-		const token = createJWT({ id: user._id, username: user.username, email: user.email });
-		console.log(user, token);
-		return 'New user created';
+		const token = auth.createJWT({ id: user._id, username: user.username, email: user.email });
+		return token;
 	},
 };
 
@@ -40,8 +26,8 @@ const login = {
 	type: GraphQLString,
 	description: 'Returns a string',
 	args: {
-		email: { type: GraphQLString },
-		password: { type: GraphQLString },
+		email: { type: new GraphQLNonNull(GraphQLString) },
+		password: { type: new GraphQLNonNull(GraphQLString) },
 	},
 	resolve: async (_, args) => {
 		const user = await User.findOne({ email: args.email });
@@ -49,15 +35,38 @@ const login = {
 		if (!user) {
 			throw new Error('Usuario no encontrado con email especificado');
 		}
-
-		if(args.password !== user.password){
+		const validPassword = await bcrypt.comparePassword(password, user.password);
+		if (!validPassword) {
 			throw new Error('Contraseña incorrecta');
 		}
 
-		const token = createJWT({ id: user._id, username: user.username, email: user.email });
+		const token = auth.createJWT({ id: user._id, username: user.username, email: user.email });
 
 		return token;
 	},
 };
 
-module.exports = { register, login };
+const createPost = {
+	type: PostType,
+	description: 'create a new blog post',
+	args: {
+		title: { type: new GraphQLNonNull(GraphQLString) },
+		body: { type: new GraphQLNonNull(GraphQLString) },
+	},
+	async resolve(_, args, { verifiedUser }) {
+		if (!verifiedUser) throw new Error('You must be logged in to do that');
+
+		const userFound = await User.findById(verifiedUser._id);
+		if (!userFound) throw new Error('Unauthorized');
+
+		const post = new Post({
+			authorId: verifiedUser._id,
+			title: args.title,
+			body: args.body,
+		});
+
+		return post.save();
+	},
+};
+
+module.exports = { register, login, createPost };
