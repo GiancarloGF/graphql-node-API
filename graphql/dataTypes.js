@@ -25,6 +25,8 @@ const {
       id: { type: GraphQLID },
       title: { type: GraphQLString },
       body: { type: GraphQLString },
+      // createdAt: { type: GraphQLString },
+      // updatedAt: { type: GraphQLString },
       author: {
         type: UserType,
         resolve(parent) {
@@ -46,6 +48,8 @@ const {
     fields: () => ({
       id: { type: GraphQLID },
       comment: { type: GraphQLString },
+      // createdAt: { type: GraphQLString },
+      // updatedAt: { type: GraphQLString },
       user: {
         type: UserType,
         resolve(parent) {

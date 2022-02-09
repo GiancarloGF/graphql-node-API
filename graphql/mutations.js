@@ -84,8 +84,8 @@ const updatePost = {
 			{ _id: id, authorId: verifiedUser._id },
 			{ title, body },
 			{
-				new: true,
-				runValidators: true,
+				new: true, // Return the new post updated instead of the old one.
+				runValidators: true, // Force the update to run validators.
 			}
 		);
 
