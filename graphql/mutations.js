@@ -1,5 +1,5 @@
 const { GraphQLString, GraphQLID, GraphQLNonNull } = require('graphql');
-const { User, Post } = require('../models');
+const { User, Post,Comment } = require('../models');
 const { auth, bcrypt } = require('../util');
 const { PostType, CommentType } = require("./dataTypes");
 
@@ -10,11 +10,11 @@ const register = {
 		username: { type: new GraphQLNonNull(GraphQLString) },
 		password: { type: new GraphQLNonNull(GraphQLString) },
 		email: { type: new GraphQLNonNull(GraphQLString) },
-		displayName: { type: new GraphQLNonNull(GraphQLString) },
+		displayname: { type: new GraphQLNonNull(GraphQLString) },
 	},
 	resolve: async (_, args) => {
-		const { username, password, email, displayName } = args;
-		const user = new User({ username, email, password, displayName });
+		const { username, password, email, displayname } = args;
+		const user = new User({ username, email, password, displayname });
 		user.password = await bcrypt.encryptPassword(user.password);
 		await user.save();
 
@@ -30,8 +30,8 @@ const login = {
 		email: { type: new GraphQLNonNull(GraphQLString) },
 		password: { type: new GraphQLNonNull(GraphQLString) },
 	},
-	resolve: async (_, args) => {
-		const user = await User.findOne({ email: args.email });
+	resolve: async (_, { email, password }) => {
+		const user = await User.findOne({ email: email });
 		// const user = await User.findOne({ email: args.email }).select('+password');
 		if (!user) {
 			throw new Error('Usuario no encontrado con email especificado');
@@ -57,11 +57,11 @@ const createPost = {
 	async resolve(_, args, { verifiedUser }) {
 		if (!verifiedUser) throw new Error('You must be logged in to do that');
 
-		const userFound = await User.findById(verifiedUser._id);
+		const userFound = await User.findById(verifiedUser.id);
 		if (!userFound) throw new Error('Unauthorized');
 
 		const post = new Post({
-			authorId: verifiedUser._id,
+			authorId: verifiedUser.id,
 			title: args.title,
 			body: args.body,
 		});
@@ -81,7 +81,7 @@ const updatePost = {
 		if (!verifiedUser) throw new Error('Unauthorized');
 
 		const postUpdated = await Post.findOneAndUpdate(
-			{ _id: id, authorId: verifiedUser._id },
+			{ _id: id, authorId: verifiedUser.id },
 			{ title, body },
 			{
 				new: true, // Return the new post updated instead of the old one.
@@ -104,7 +104,7 @@ const deletePost = {
 	async resolve(_, args, { verifiedUser }) {
 		const postDeleted = await Post.findOneAndDelete({
 			_id: args.postId,
-			authorId: verifiedUser._id,
+			authorId: verifiedUser.id,
 		});
 		if (!postDeleted) throw new Error('No post with given ID Found for the author');
 
@@ -121,7 +121,7 @@ const addComment = {
 	},
 	resolve(_, { postId, comment }, { verifiedUser }) {
 		const newComment = new Comment({
-			userId: verifiedUser._id,
+			userId: verifiedUser.id,
 			postId,
 			comment,
 		});
@@ -142,7 +142,7 @@ const updateComment = {
 		const commentUpdated = await Comment.findOneAndUpdate(
 			{
 				_id: id,
-				userId: verifiedUser._id,
+				userId: verifiedUser.id,
 			},
 			{
 				comment,
@@ -170,7 +170,7 @@ const deleteComment = {
 
 		const commentDelete = await Comment.findOneAndDelete({
 			_id: id,
-			userId: verifiedUser._id,
+			userId: verifiedUser.id,
 		});
 
 		if (!commentDelete) throw new Error('No comment with the given ID for the user');

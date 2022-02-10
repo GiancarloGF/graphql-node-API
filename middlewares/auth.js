@@ -8,7 +8,7 @@ const authenticate = (req, res, next) => {
     req.verifiedUser = verified.user;
     next();
   } catch (error) {
-    // console.error("error:", error);
+    //  console.error("error:", error);
     next();
   }
 };
